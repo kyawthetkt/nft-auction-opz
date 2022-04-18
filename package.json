@@ -1,6 +1,5 @@
 {
   "name": "hardhat-project",
-  
   "scripts": {
     "compile": "hardhat compile",
     "test": "hardhat test",
@@ -9,15 +8,19 @@
     "deploy-ropsten": "hardhat deploy --network ropsten",
     "verify": "npx hardhat verify --network rinkeby"
   },
-  "devDependencies": {
+  "dependencies": {
     "@nomiclabs/hardhat-ethers": "^2.0.5",
     "@nomiclabs/hardhat-waffle": "^2.0.3",
     "chai": "^4.3.6",
     "ethereum-waffle": "^3.4.4",
     "ethers": "^5.6.4",
-    "hardhat": "^2.9.3"
-  },
-  "dependencies": {
+    "hardhat": "^2.9.3",
+    "hardhat-deploy": "^0.9.0",
+    "hardhat-gas-reporter": "^1.0.8",
+    "solidity-coverage": "^0.7.20",
     "@openzeppelin/contracts": "^4.5.0"
+  },
+  "devDependencies": {
+    "@nomiclabs/hardhat-etherscan": "^3.0.3"
   }
 }

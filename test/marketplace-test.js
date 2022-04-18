@@ -10,6 +10,7 @@ let marketplace;
 
 let user1;
 let user2;
+let minPrice = 100;
 
 describe("Nft", function () {
   
@@ -40,7 +41,7 @@ describe("Nft", function () {
     });
 
     it("Create Auction", async function () {
-      await marketplace.connect(user1).createAuction(nft.address, nftTokenId, 1, 100, 10);
+      await marketplace.connect(user1).createAuction(nft.address, nftTokenId, 1, minPrice, 10);
       let result = await marketplace.nftAuctions(nft.address, nftTokenId);
       expect(result.seller).to.equal(user1.address);
     });
@@ -53,7 +54,7 @@ describe("Nft", function () {
           // credit USER1 balance with tokens
           // await PaymentToken.transfer(USER1.address, 10000)
           // Place new bid with USER1          
-          await marketplace.connect(user1).createAuction(nft.address, nftTokenId, 1, 100, 10);
+          await marketplace.connect(user1).createAuction(nft.address, nftTokenId, 1, minPrice, 10);
       });
 
       it('Should reject new Bid if auction owner creates bid', async () => {
@@ -68,14 +69,22 @@ describe("Nft", function () {
         );
       })
 
-      // it('Accept new Bid if auction owner creates bid', async () => {
-      //   await marketplace.connect(user2).createBid(nft.address, nftTokenId, 101);
-      //   let result1 = await marketplace.nftAuctions(nft.address, nftTokenId);
-      //   console.log(result1.highestBidder)
-      //   await marketplace.connect(user3).createBid(nft.address, nftTokenId, 102);
-      //   let result = await marketplace.nftAuctions(nft.address, nftTokenId);
-      //   console.log(result.highestBidder)
+      //  it('Accept new Bid if auction owner creates bid', async () => {
+        // marketplace = await marketplace.connect(user2).createBid(nft.address, nftTokenId, 101);
+        // let result1 = await marketplace.nftAuctions(nft.address, nftTokenId);
+        // console.log(result1.highestBidder)
+        // await marketplace.connect(user3).createBid(nft.address, nftTokenId, 102);
+        // let result = await marketplace.nftAuctions(nft.address, nftTokenId);
+        // console.log(result.highestBidder)
       // });
+
+      it('Check bid detail', async () => {
+        const price = 101;
+        await marketplace.connect(user2).createBid(nft.address, nftTokenId, 101);
+        const res = await marketplace.getAuction(nft.address, nftTokenId);
+        expect(price).to.equal(res.highestBid)
+        expect(minPrice).to.equal(res.minPrice)
+      });
 
   });  
 
