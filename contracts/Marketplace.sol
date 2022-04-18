@@ -93,6 +93,7 @@ contract Marketplace {
         nftAuctions[_nftContractAddress][_nftTokenId].seller = msg.sender;
         nftAuctions[_nftContractAddress][_nftTokenId].status = _status;
         nftAuctions[_nftContractAddress][_nftTokenId].minPrice = _minPrice;
+        nftAuctions[_nftContractAddress][_nftTokenId].highestBid = _minPrice;
         nftAuctions[_nftContractAddress][_nftTokenId].bidIncrementAmount = _bidIncrementAmount;
 
         emit AuctionCreated(
@@ -113,11 +114,7 @@ contract Marketplace {
         require(msg.sender != nftAuction.seller, "Owner cannot create bid.");
         
         // check valid price
-        require(
-            _newAmount > (nftAuction.highestBid > 0? nftAuction.highestBid: nftAuction.minPrice), 
-            "New bid must be higher than current bid."
-        );
-
+        require(_newAmount > nftAuction.minPrice, "New bid must be higher than current bid.");
 
         // [REFUND the previous bidder]
         address prevBidder = nftAuction.highestBidder;
@@ -141,7 +138,12 @@ contract Marketplace {
 
         return true;
 
-    } 
+    }
+
+    function getAuction(address _nftContractAddress, uint256 _nftTokenId) external view returns(Auction memory obj)
+    {
+        return nftAuctions[_nftContractAddress][_nftTokenId];
+    }
 
  
 }
