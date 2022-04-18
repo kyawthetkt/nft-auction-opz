@@ -145,5 +145,17 @@ contract Marketplace {
         return nftAuctions[_nftContractAddress][_nftTokenId];
     }
 
+    function claimToken(address _nftContractAddress, uint256 _nftTokenId) external { 
+        // Check valid _nftContractAddress and _nftTokenId pair
+        // Check the seller is the msg.sender
+        // Set auction to inactive
+    }
+
+     function claimNft(address _nftContractAddress, uint256 _nftTokenId) external { 
+        // Check valid _nftContractAddress and _nftTokenId pair
+        // Check highest bidder is the msg.sender
+        // Set auction to inactive
+    }
+
  
 }
