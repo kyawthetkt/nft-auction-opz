@@ -151,11 +151,12 @@ contract Marketplace {
         // Set auction to inactive
     }
 
-     function claimNft(address _nftContractAddress, uint256 _nftTokenId) external { 
+    function claimNft(address _nftContractAddress, uint256 _nftTokenId) external { 
         // Check valid _nftContractAddress and _nftTokenId pair
         // Check highest bidder is the msg.sender
         // Set auction to inactive
     }
-
+     
+     // The end
  
 }
