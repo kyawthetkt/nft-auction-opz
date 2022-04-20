@@ -1,6 +1,7 @@
 //SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.0;
 
+import "./Nft.sol";
 import "hardhat/console.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
@@ -76,7 +77,12 @@ contract Marketplace {
         assembly {
             size := extcodesize(account)
         }
-        require(size > 0, "Invalid NFT Collection contract address");
+        require(size > 0, "Invalid NFT Collection Contract address");
+        _;
+    }
+
+    modifier isActive(address _nftContractAddress, uint256 _nftTokenId) {
+        require(nftAuctions[_nftContractAddress][_nftTokenId].status == true, "Inactive Auction.");
         _;
     }
 
@@ -90,11 +96,22 @@ contract Marketplace {
         uint128 _minPrice,
         uint32 _bidIncrementAmount
     ) external isContract(_nftContractAddress) {
+        
+        require(IERC721(_nftContractAddress).ownerOf(_nftTokenId) == msg.sender, "Owner only.");
+        
         nftAuctions[_nftContractAddress][_nftTokenId].seller = msg.sender;
         nftAuctions[_nftContractAddress][_nftTokenId].status = _status;
         nftAuctions[_nftContractAddress][_nftTokenId].minPrice = _minPrice;
         nftAuctions[_nftContractAddress][_nftTokenId].highestBid = _minPrice;
         nftAuctions[_nftContractAddress][_nftTokenId].bidIncrementAmount = _bidIncrementAmount;
+
+        // Lock NFT in marketplace contract        
+        IERC721(_nftContractAddress).transferFrom(msg.sender, address(this), _nftTokenId);
+        require(
+            IERC721(_nftContractAddress).ownerOf(_nftTokenId) == address(this),
+            "NFT Transfer to Contract Failed."
+        );
+       
 
         emit AuctionCreated(
             _nftContractAddress,
@@ -145,18 +162,52 @@ contract Marketplace {
         return nftAuctions[_nftContractAddress][_nftTokenId];
     }
 
-    function claimToken(address _nftContractAddress, uint256 _nftTokenId) external { 
+    /*
+    * This method is called by the nft owner of an auction
+    */
+    function claimToken(address _nftContractAddress, uint256 _nftTokenId) external {
+
+        Auction storage auction = nftAuctions[_nftContractAddress][_nftTokenId];
+
         // Check valid _nftContractAddress and _nftTokenId pair
-        // Check the seller is the msg.sender
+        require(auction.seller != address(0), "Invalid NFT Auction.");
+        
+        // Check the seller is the owner.
+        require(auction.seller == msg.sender, "Only NFT owner can claim.");
+
+        // Transfer NFT to highest bidder
+        _transferNft(_nftContractAddress, _nftTokenId, auction.highestBidder);
+
+        // Transfer locked money to NFT Seller
+        
         // Set auction to inactive
+        auction.status = false;
+    }
+    
+    /*
+    * This method is called by the highest bidder of an auction
+    */
+    function claimNft(address _nftContractAddress, uint256 _nftTokenId) external { 
+        Auction storage auction = nftAuctions[_nftContractAddress][_nftTokenId];
+
+        // Check valid _nftContractAddress and _nftTokenId pair
+        require(auction.seller != address(0), "Invalid NFT Auction.");
+
+        // Check highest bidder is the msg.sender
+        require(auction.highestBidder == msg.sender, "Only Highest can claim.");
+
+        // Transfer NFT to highest bidder
+        _transferNft(_nftContractAddress, _nftTokenId, auction.highestBidder);
+
+        // Transfer locked money to NFT Seller
+
+        // Set auction to inactive
+        auction.status = false;
     }
 
-    function claimNft(address _nftContractAddress, uint256 _nftTokenId) external { 
-        // Check valid _nftContractAddress and _nftTokenId pair
-        // Check highest bidder is the msg.sender
-        // Set auction to inactive
+    function _transferNft(address _nftContractAddress, uint256 _nftTokenId, address _receiver) internal returns (bool) {
+        IERC721(_nftContractAddress).transferFrom(address(this), _receiver, _nftTokenId);
+        return true;
     }
-     
-     // The end
  
 }
