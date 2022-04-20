@@ -42,7 +42,7 @@ contract Marketplace {
         address newBidder
     );
 
-    event refundedPreviousBidder(
+    event RefundedPreviousBidder(
         address nftContractAddress,
         uint256 tokenId,
         address prevBidder,
@@ -53,13 +53,13 @@ contract Marketplace {
         name = _name;
     }
 
-    function _isERC20Auction(address _auctionERC20Token)
-        internal
-        pure
-        returns (bool)
-    {
-        return _auctionERC20Token != address(0);
-    }
+    // function _isERC20Auction(address _auctionERC20Token)
+    //     internal
+    //     pure
+    //     returns (bool)
+    // {
+    //     return _auctionERC20Token != address(0);
+    // }
 
     modifier isNotOnSale(address _nftContractAddress,uint256 _nftTokenId) {
         require(
@@ -77,7 +77,7 @@ contract Marketplace {
         assembly {
             size := extcodesize(account)
         }
-        require(size > 0, "Invalid NFT Collection Contract address");
+        require(size > 0, "Invalid NFT Collection Contract address.");
         _;
     }
 
@@ -97,7 +97,7 @@ contract Marketplace {
         uint32 _bidIncrementAmount
     ) external isContract(_nftContractAddress) {
         
-        require(IERC721(_nftContractAddress).ownerOf(_nftTokenId) == msg.sender, "Owner only.");
+        require(IERC721(_nftContractAddress).ownerOf(_nftTokenId) == msg.sender, "Only NFT owner create.");
         
         nftAuctions[_nftContractAddress][_nftTokenId].seller = msg.sender;
         nftAuctions[_nftContractAddress][_nftTokenId].status = _status;
