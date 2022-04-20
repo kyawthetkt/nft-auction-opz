@@ -1,0 +1,28 @@
+Mint NFT
+- check minter address equal to NFT owner
+- check random user not to be equal to NFT owner 
+
+Create Auction
+- check valid contract
+- check price acceptable
+- check it is nft owner or not
+- check ownership transfer
+- check locking in NFT in the marketplace
+- check successful creation
+
+Create Bid
+- check owner cannot create bid
+- check bid amount is greater than the previous
+- check new highest bidder
+- check new amount
+
+Get Auction
+- check all values are equal to what are used to created
+
+SettleAuction -> (called by Marketplace)
+- check valid NFT
+- check NFT transfer
+- check Money transfer
+ 
+
+
