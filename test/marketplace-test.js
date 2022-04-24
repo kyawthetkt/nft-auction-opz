@@ -51,6 +51,7 @@ describe("Nft", function () {
     });   
 
   });
+
   /******************************/
   /********* Auction ************/
   /******************************/
@@ -98,18 +99,6 @@ describe("Nft", function () {
       });
   
     });
-    
-  
-
-     /*
-      it("Should allow if user1 is NFT owner", async function () {
-        expect(await nft.ownerOf(nftTokenId)).to.equal(user1.address);
-      });
-  
-      it("Should allow if user2 is not NFT owner", async function () {
-        expect(await nft.ownerOf(nftTokenId)).to.equal(user2.address);
-      });
-     */   
   /******************************/
   /*********** Bid **************/
   /******************************/
@@ -136,51 +125,12 @@ describe("Nft", function () {
           "New bid must be higher than current bid."
         );
       });
-
-      // Passed Bid
-      // it("transferring nft token directly to contract", async function () {
-      //   await nft.connect(user1).transferFrom(user1.address, marketplace.address, nftTokenId);
-      //   expect(await nft.ownerOf(nftTokenId)).to.equal(marketplace.address);
-      // }); 
-      
-      /*
-      * Claim NFT
-      */
-      it('Should not allow NFT claim for invalid contract address and token id', async () => {
-        await expect(marketplace.connect(user2).claimNft(nft.address, 2322)).to.be.revertedWith(
-          "Invalid NFT Auction."
-        );
-      });
-      
-      it('Should not allow NFT claim for non highest bidder', async () => {
-        await marketplace.connect(user2).createBid(nft.address, nftTokenId, 101);
-        await marketplace.connect(user3).createBid(nft.address, nftTokenId, 120);
-        await expect(marketplace.connect(user2).claimNft(nft.address, nftTokenId)).to.be.revertedWith(
-          "Only Highest can claim."
-        );
-      });
-
-      it('Check after claiming NFT.', async () => {
-          await marketplace.connect(user2).createBid(nft.address, nftTokenId, 300);
-          await marketplace.connect(user2).claimNft(nft.address, nftTokenId);
-          expect(await nft.ownerOf(nftTokenId)).to.equal(user2.address);
-      });
-
-      it('Check if an auction has highest bid', async () => {
-        await marketplace.connect(user2).createBid(nft.address, nftTokenId, 101);
-        let result1 = await marketplace.nftAuctions(nft.address, nftTokenId);
-        expect(result1.highestBidder).to.equal(user2.address)
-        await marketplace.connect(user3).createBid(nft.address, nftTokenId, 102);
-        let result2 = await marketplace.nftAuctions(nft.address, nftTokenId);
-        expect(result2.highestBidder).to.equal(user3.address)
-      });
-   
   });
 
   describe("Get Auction", async function () {
     beforeEach(async () => {
         await marketplace.connect(user1).createAuction(nft.address, nftTokenId, true, minPrice, 10);
-        auctionDetail = await marketplace.nftAuctions(nft.address, nftTokenId);;
+        auctionDetail = await marketplace.nftAuctions(nft.address, nftTokenId);
       });
 
     it('Check Seller Address', async () => {
@@ -202,6 +152,40 @@ describe("Nft", function () {
       expect(auctionDetail.bidIncrementAmount).to.equal(10);        
     });
 
+  });
+
+  describe("Settle Auction", async function () {
+    beforeEach(async () => {
+      await marketplace.connect(user1).createAuction(nft.address, nftTokenId, true, minPrice, 10);
+      await marketplace.connect(user2).createBid(nft.address, nftTokenId, 200);
+      await marketplace.connect(user3).createBid(nft.address, nftTokenId, 300);
+    });
+    
+    // Failed Settlement
+    it('Should reject if NFT Token id is invalid', async () => {
+      const nonExistingNo = 222;
+      await expect(marketplace.connect(user3).settleAuction(nft.address, nonExistingNo)).to.be.revertedWith(
+        "Invalid NFT Auction."
+      );
+    });
+      
+    it('Should reject for non highest bidder claims NFT', async () => {
+      await expect(marketplace.connect(user2).settleAuction(nft.address, nftTokenId)).to.be.revertedWith(
+        "Only Highest can claim."
+      );
+    });
+
+    // Passed Settlement
+   it('Should allow if owner of NFT is user3 after claiming.', async () => {
+        auctionDetail = await marketplace.nftAuctions(nft.address, nftTokenId);
+        console.log("Before AuctionDetail: ", auctionDetail);
+
+        await marketplace.connect(user3).settleAuction(nft.address, nftTokenId);
+        expect(await nft.ownerOf(nftTokenId)).to.equal(user3.address);
+        
+        auctionDetail = await marketplace.nftAuctions(nft.address, nftTokenId);
+        console.log("After AuctionDetail: ", auctionDetail);
+    });
   });
 
 });

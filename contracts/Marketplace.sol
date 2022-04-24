@@ -162,33 +162,11 @@ contract Marketplace {
     {
         return nftAuctions[_nftContractAddress][_nftTokenId];
     }
-
-    /*
-    * This method is called by the nft owner of an auction
-    */
-    function claimToken(address _nftContractAddress, uint256 _nftTokenId) external {
-
-        Auction storage auction = nftAuctions[_nftContractAddress][_nftTokenId];
-
-        // Check valid _nftContractAddress and _nftTokenId pair
-        require(auction.seller != address(0), "Invalid NFT Auction.");
-        
-        // Check the seller is the owner.
-        require(auction.seller == msg.sender, "Only NFT owner can claim.");
-
-        // Transfer NFT to highest bidder
-        _transferNft(_nftContractAddress, _nftTokenId, auction.highestBidder);
-
-        // Transfer locked money to NFT Seller
-        
-        // Set auction to inactive
-        auction.status = false;
-    }
-    
+ 
     /*
     * This method is called by the highest bidder of an auction
     */
-    function claimNft(address _nftContractAddress, uint256 _nftTokenId) external { 
+    function settleAuction(address _nftContractAddress, uint256 _nftTokenId) external { 
         Auction storage auction = nftAuctions[_nftContractAddress][_nftTokenId];
 
         // Check valid _nftContractAddress and _nftTokenId pair
@@ -202,7 +180,10 @@ contract Marketplace {
 
         // Transfer locked money to NFT Seller
 
-        // Set auction to inactive
+        auction.highestBidder = address(0);
+        auction.seller = address(0);
+        auction.minPrice = 0;
+        auction.bidIncrementAmount = 0;
         auction.status = false;
     }
 
