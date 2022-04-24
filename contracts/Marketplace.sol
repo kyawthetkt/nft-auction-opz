@@ -20,6 +20,7 @@ contract Marketplace {
         address seller;
         bool status;
         uint128 minPrice;
+        uint128 endDate;
         uint32 bidIncrementAmount;
     }
 
@@ -131,7 +132,7 @@ contract Marketplace {
         require(msg.sender != nftAuction.seller, "Owner cannot create bid.");
         
         // check valid price
-        require(_newAmount > nftAuction.minPrice, "New bid must be higher than current bid.");
+        require(_newAmount > nftAuction.highestBid, "New bid must be higher than current bid.");
 
         // [REFUND the previous bidder]
         address prevBidder = nftAuction.highestBidder;

@@ -13,6 +13,7 @@ let user2;
 let minPrice = 100;
 
 let passedAuctionResult;
+let auctionDetail;
 
 describe("Nft", function () {
   
@@ -87,7 +88,7 @@ describe("Nft", function () {
       it("Should allow if user1 transfers NFT ownership to marketplace.", async function () {
         expect(await nft.ownerOf(nftTokenId)).not.equal(user1.address);
       });
-
+      
       it("Should allow if auction NFT is locked by marketplace.", async function () {
         expect(await nft.ownerOf(nftTokenId)).to.equal(marketplace.address);
       });
@@ -118,26 +119,29 @@ describe("Nft", function () {
           // await PaymentToken.connect(USER1).approve(marketplace.address, 10000)
           // credit USER1 balance with tokens
           // await PaymentToken.transfer(USER1.address, 10000);
-          await marketplace.connect(user1).createAuction(nft.address, nftTokenId, 1, minPrice, 10);
+          await marketplace.connect(user1).createAuction(nft.address, nftTokenId, true, minPrice, 10);
           //approve smart contract to transfer this NFT
           // await nft.connect(user1).transferFrom(user1.address, marketplace.address, nftTokenId);
       });
-      // it("transferring nft token directly to contract", async function () {
-      //   await nft.connect(user1).transferFrom(user1.address, marketplace.address, nftTokenId);
-      //   expect(await nft.ownerOf(nftTokenId)).to.equal(marketplace.address);
-      // });
-
-    /*  it('Should not allow new Bid if auction owner creates bid', async () => {
-        await expect(marketplace.connect(user1).createBid(nft.address, nftTokenId, 101)).to.be.revertedWith(
-          "Owner cannot create bid"
-        );
+      
+      // Failed Bid
+      it('Should reject if auction owner creates bid', async () => {        
+        await expect(marketplace.connect(user1).createBid(nft.address, nftTokenId, 100)).to.be.revertedWith(
+          "Owner cannot create bid."
+        ); 
       });
 
-      it('Should not allow new Bid if new bid amount is not higher than current bid or min price', async () => {
+      it('Should reject if new amount is not greater than current bid or min price', async () => {
         await expect(marketplace.connect(user2).createBid(nft.address, nftTokenId, 100)).to.be.revertedWith(
           "New bid must be higher than current bid."
         );
-      }) */
+      });
+
+      // Passed Bid
+      // it("transferring nft token directly to contract", async function () {
+      //   await nft.connect(user1).transferFrom(user1.address, marketplace.address, nftTokenId);
+      //   expect(await nft.ownerOf(nftTokenId)).to.equal(marketplace.address);
+      // }); 
       
       /*
       * Claim NFT
@@ -170,15 +174,34 @@ describe("Nft", function () {
         let result2 = await marketplace.nftAuctions(nft.address, nftTokenId);
         expect(result2.highestBidder).to.equal(user3.address)
       });
+   
+  });
 
-      it('Check bid detail', async () => {
-        const bidPrice = 101;
-        await marketplace.connect(user2).createBid(nft.address, nftTokenId, bidPrice);
-        const res = await marketplace.getAuction(nft.address, nftTokenId);
-        expect(bidPrice).to.equal(res.highestBid)
-        expect(minPrice).to.equal(res.minPrice)
-      }); 
+  describe("Get Auction", async function () {
+    beforeEach(async () => {
+        await marketplace.connect(user1).createAuction(nft.address, nftTokenId, true, minPrice, 10);
+        auctionDetail = await marketplace.nftAuctions(nft.address, nftTokenId);;
+      });
 
-  });  
+    it('Check Seller Address', async () => {
+      expect(auctionDetail.seller).to.equal(user1.address);
+    });
+    it('Check Status', async () => {
+      expect(auctionDetail.status).to.equal(true);        
+    });
+
+    it('Check Minimun Price', async () => {
+      expect(auctionDetail.minPrice).to.equal(100);        
+    });
+
+    it('Check Highest Bid', async () => {
+      expect(auctionDetail.highestBid).to.equal(100);
+    });
+
+    it('Check Bid Increment Amount', async () => {
+      expect(auctionDetail.bidIncrementAmount).to.equal(10);        
+    });
+
+  });
 
 });
