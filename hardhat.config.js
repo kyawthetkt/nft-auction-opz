@@ -8,7 +8,7 @@ require("@nomiclabs/hardhat-ethers");
 const ETHER_SCAN_APIKEY = "WQRP6NI6ME3WVW6RUH8M523GA4J47U3CUG";
 const COINMARKET_CAP_KEY = "";//"fd0c7a22-cb98-45fd-a975-74680e5c0855";
 const INFURAIO_URL = "https://rinkeby.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161";
-const RINKEBY_PRIVATE_KEY = "3ff18ad618c6ed50ee38e159f41ae050628bf6a33e4038324f6dcc9d9448eed1";
+const RINKEBY_PRIVATE_KEY = "f0c589753a58eadcda25fc76a741e95ea2cfc02561a38d96fc7a9a41c8d9a8b3";
 
 // This is a sample Hardhat task. To learn how to create your own go to
 // https://hardhat.org/guides/create-task.html
@@ -40,6 +40,10 @@ module.exports = {
     apiKey: ETHER_SCAN_APIKEY
   },
   networks: {
+    // mainet: {
+    //   url: URL,
+    //   accounts: [`0x${RINKEBY_PRIVATE_KEY}`],
+    // },
     rinkeby: {
       url: INFURAIO_URL,
       accounts: [`0x${RINKEBY_PRIVATE_KEY}`],
