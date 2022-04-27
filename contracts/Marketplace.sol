@@ -1,7 +1,7 @@
 //SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.0;
 
-import "./Nft.sol";
+import "./ERC721Contract.sol";
 import "hardhat/console.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
@@ -12,6 +12,7 @@ contract Marketplace {
     // block.timestamp
     string public name;
     mapping(address => mapping(uint256 => Auction)) public nftAuctions;
+    mapping(address => uint256) failedTransferCredits;
 
     //Each Auction is unique to each NFT (contract + id pairing).
     struct Auction {
@@ -61,13 +62,13 @@ contract Marketplace {
     //     return _auctionERC20Token != address(0);
     // }
 
-    modifier isNotOnSale(address _nftContractAddress,uint256 _nftTokenId) {
-        require(
-            nftAuctions[_nftContractAddress][_nftTokenId].seller != msg.sender,
-            "The Auction is already started."
-        );
-        _;
-    }
+    // modifier isNotOnSale(address _nftContractAddress,uint256 _nftTokenId) {
+    //     require(
+    //         nftAuctions[_nftContractAddress][_nftTokenId].seller != msg.sender,
+    //         "The Auction is already started."
+    //     );
+    //     _;
+    // }
 
     modifier isContract(address account)  {
         // This method relies on extcodesize, which returns 0 for contracts in
@@ -112,14 +113,12 @@ contract Marketplace {
         require(
             IERC721(_nftContractAddress).ownerOf(_nftTokenId) == address(this),
             "NFT Transfer to Contract Failed."
-        );
-       
+        );       
 
         emit AuctionCreated(
             _nftContractAddress,
             _nftTokenId,
             msg.sender,
-            // _status,
             _minPrice,
             _endDate,
             _bidIncrementAmount
@@ -141,7 +140,12 @@ contract Marketplace {
         if (prevBidder != address(0)) {
             uint256 prevBid    = nftAuction.highestBid;
             (bool success, ) = prevBidder.call{value: prevBid, gas: 20000}("");
-            require(!success, "Unable to refund to previous highest bidder.");
+            // require(!success, "Unable to refund to previous highest bidder.");
+            if (!success) {
+                failedTransferCredits[prevBidder] =
+                    failedTransferCredits[prevBidder] +
+                    prevBid;
+            }
         }
 
         // emit refundedPreviousBidder(_nftContractAddress, _nftTokenId, prevBidder, prevBid);
@@ -166,7 +170,7 @@ contract Marketplace {
     }
  
     /*
-    * This method is called by the highest bidder of an auction
+    * This method is called by nft owner or bidder or marketplace
     */
     function settleAuction(address _nftContractAddress, uint256 _nftTokenId) external { 
         Auction storage auction = nftAuctions[_nftContractAddress][_nftTokenId];
@@ -181,11 +185,24 @@ contract Marketplace {
         _transferNft(_nftContractAddress, _nftTokenId, auction.highestBidder);
 
         // Transfer locked money to NFT Seller
-
         auction.highestBidder = address(0);
         auction.seller = address(0);
         auction.minPrice = 0;
         auction.bidIncrementAmount = 0;
+    }
+
+    function withdrawAllFailedCredits() external {
+        uint256 amount = failedTransferCredits[msg.sender];
+
+        require(amount != 0, "no credits to withdraw");
+
+        failedTransferCredits[msg.sender] = 0;
+
+        (bool successfulWithdraw, ) = msg.sender.call{
+            value: amount,
+            gas: 20000
+        }("");
+        require(successfulWithdraw, "withdraw failed.");
     }
 
     function _transferNft(address _nftContractAddress, uint256 _nftTokenId, address _receiver) internal returns (bool) {

@@ -17,10 +17,10 @@ async function main() {
   console.log("Account balance:", (await deployer.getBalance()).toString())
 
   const Marketplace = await ethers.getContractFactory("Marketplace");
-  const NftContract = await ethers.getContractFactory("Nft");
+  const ERC721Contract = await ethers.getContractFactory("ERC721Contract");
 
   const marketplace = await Marketplace.deploy('My NFT Marketplace');
-  const nftContract = await NftContract.deploy("KT Token", "KT");
+  const nftContract = await ERC721Contract.deploy("KT Token", "KT");
 
   console.log("NFT deployed to: ", nftContract.address);
   console.log("Marketplace deployed to:", marketplace.address);

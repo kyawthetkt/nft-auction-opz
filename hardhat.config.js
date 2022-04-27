@@ -40,6 +40,10 @@ module.exports = {
     apiKey: ETHER_SCAN_APIKEY
   },
   networks: {
+    // mainet: {
+    //   url: URL,
+    //   accounts: [`0x${RINKEBY_PRIVATE_KEY}`],
+    // },
     rinkeby: {
       url: INFURAIO_URL,
       accounts: [`0x${RINKEBY_PRIVATE_KEY}`],
