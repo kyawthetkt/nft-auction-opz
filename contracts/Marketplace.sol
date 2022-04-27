@@ -9,8 +9,8 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract Marketplace {
 
+    // block.timestamp
     string public name;
-
     mapping(address => mapping(uint256 => Auction)) public nftAuctions;
 
     //Each Auction is unique to each NFT (contract + id pairing).
@@ -18,9 +18,8 @@ contract Marketplace {
         uint256 highestBid;
         address highestBidder;
         address seller;
-        bool status;
         uint128 minPrice;
-        uint128 endDate;
+        uint256 endDate;
         uint32 bidIncrementAmount;
     }
 
@@ -31,8 +30,8 @@ contract Marketplace {
         address nftContractAddress,
         uint256 tokenId,
         address seller,
-        bool status,
         uint256 minPrice,
+        uint256 endDate,
         uint32 bidIncrementAmount
     );
 
@@ -83,7 +82,7 @@ contract Marketplace {
     }
 
     modifier isActive(address _nftContractAddress, uint256 _nftTokenId) {
-        require(nftAuctions[_nftContractAddress][_nftTokenId].status == true, "Inactive Auction.");
+        require(nftAuctions[_nftContractAddress][_nftTokenId].endDate > block.timestamp, "Inactive Auction.");
         _;
     }
 
@@ -93,15 +92,17 @@ contract Marketplace {
     function createAuction(
         address _nftContractAddress,
         uint256 _nftTokenId,
-        bool _status,
         uint128 _minPrice,
+        uint256 _endDate,
         uint32 _bidIncrementAmount
     ) external isContract(_nftContractAddress) {
+        
+        require(_endDate > block.timestamp, "Invalid auction end date.");
         
         require(IERC721(_nftContractAddress).ownerOf(_nftTokenId) == msg.sender, "Only NFT owner create.");
         
         nftAuctions[_nftContractAddress][_nftTokenId].seller = msg.sender;
-        nftAuctions[_nftContractAddress][_nftTokenId].status = _status;
+        nftAuctions[_nftContractAddress][_nftTokenId].endDate = _endDate;
         nftAuctions[_nftContractAddress][_nftTokenId].minPrice = _minPrice;
         nftAuctions[_nftContractAddress][_nftTokenId].highestBid = _minPrice;
         nftAuctions[_nftContractAddress][_nftTokenId].bidIncrementAmount = _bidIncrementAmount;
@@ -118,8 +119,9 @@ contract Marketplace {
             _nftContractAddress,
             _nftTokenId,
             msg.sender,
-            _status,
+            // _status,
             _minPrice,
+            _endDate,
             _bidIncrementAmount
         );
     }
@@ -184,7 +186,6 @@ contract Marketplace {
         auction.seller = address(0);
         auction.minPrice = 0;
         auction.bidIncrementAmount = 0;
-        auction.status = false;
     }
 
     function _transferNft(address _nftContractAddress, uint256 _nftTokenId, address _receiver) internal returns (bool) {

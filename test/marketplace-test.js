@@ -15,6 +15,16 @@ let minPrice = 100;
 let passedAuctionResult;
 let auctionDetail;
 
+function addMinuteToCurrent(minutesToAdd) {
+    var currentDate = new Date();
+    var futureTimestamp = currentDate.getTime() + minutesToAdd*60000;
+    // console.log(futureTimestamp)
+    // new Date(futureTimestamp);
+    return futureTimestamp;
+}
+
+let endAuctionDate = addMinuteToCurrent(5);
+
 describe("Nft", function () {
   
   // First Step Deployment Testing.
@@ -58,23 +68,30 @@ describe("Nft", function () {
     describe("Failed Auction Creation", async function(){
 
       it("Should reject if NFT contract address is invalid.", async function () {
-        await expect(marketplace.connect(user1).createAuction(user1.address, nftTokenId, true, minPrice, 10)).to.be.revertedWith(
+        await expect(marketplace.connect(user1).createAuction(user1.address, nftTokenId, minPrice, endAuctionDate, 10)).to.be.revertedWith(
           "Invalid NFT Collection Contract address."
         );
       });
 
       it("Should reject if auction creator is not the owner.", async function () {
-          await expect(marketplace.connect(user2).createAuction(nft.address, nftTokenId, true, minPrice, 10)).to.be.revertedWith(
+          await expect(marketplace.connect(user2).createAuction(nft.address, nftTokenId, minPrice, endAuctionDate, 10)).to.be.revertedWith(
             "Only NFT owner create."
           );
       });
+
+      it("Should reject if auction end date is invalid.", async function () {
+        let invalidEndate = 12222222;
+        await expect(marketplace.connect(user2).createAuction(nft.address, nftTokenId, minPrice, invalidEndate, 10)).to.be.revertedWith(
+          "Invalid auction end date."
+        );
+    });
   
     });
     
     describe("Passed Auction Creation", async function(){
 
       beforeEach(async () => {
-        await marketplace.connect(user1).createAuction(nft.address, nftTokenId, true, minPrice, 10);
+        await marketplace.connect(user1).createAuction(nft.address, nftTokenId, minPrice, endAuctionDate,10);
         passedAuctionResult = await marketplace.nftAuctions(nft.address, nftTokenId);
       });
 
@@ -94,9 +111,9 @@ describe("Nft", function () {
         expect(await nft.ownerOf(nftTokenId)).to.equal(marketplace.address);
       });
 
-      it("Should allow if auction status is true.", async function () {
-         expect(passedAuctionResult.status).to.true;
-      });
+      // it("Should allow if auction status is true.", async function () {
+      //    expect(passedAuctionResult.status).to.true;
+      // });
   
     });
   /******************************/
@@ -108,7 +125,7 @@ describe("Nft", function () {
           // await PaymentToken.connect(USER1).approve(marketplace.address, 10000)
           // credit USER1 balance with tokens
           // await PaymentToken.transfer(USER1.address, 10000);
-          await marketplace.connect(user1).createAuction(nft.address, nftTokenId, true, minPrice, 10);
+          await marketplace.connect(user1).createAuction(nft.address, nftTokenId, minPrice, endAuctionDate, 10);
           //approve smart contract to transfer this NFT
           // await nft.connect(user1).transferFrom(user1.address, marketplace.address, nftTokenId);
       });
@@ -129,16 +146,16 @@ describe("Nft", function () {
 
   describe("Get Auction", async function () {
     beforeEach(async () => {
-        await marketplace.connect(user1).createAuction(nft.address, nftTokenId, true, minPrice, 10);
+        await marketplace.connect(user1).createAuction(nft.address, nftTokenId, minPrice, endAuctionDate, 10);
         auctionDetail = await marketplace.nftAuctions(nft.address, nftTokenId);
       });
 
     it('Check Seller Address', async () => {
       expect(auctionDetail.seller).to.equal(user1.address);
     });
-    it('Check Status', async () => {
-      expect(auctionDetail.status).to.equal(true);        
-    });
+    // it('Check Status', async () => {
+    //   expect(auctionDetail.status).to.equal(true);        
+    // });
 
     it('Check Minimun Price', async () => {
       expect(auctionDetail.minPrice).to.equal(100);        
@@ -156,7 +173,7 @@ describe("Nft", function () {
 
   describe("Settle Auction", async function () {
     beforeEach(async () => {
-      await marketplace.connect(user1).createAuction(nft.address, nftTokenId, true, minPrice, 10);
+      await marketplace.connect(user1).createAuction(nft.address, nftTokenId, minPrice, endAuctionDate, 10);
       await marketplace.connect(user2).createBid(nft.address, nftTokenId, 200);
       await marketplace.connect(user3).createBid(nft.address, nftTokenId, 300);
     });
