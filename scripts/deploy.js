@@ -13,40 +13,18 @@ async function main() {
   // manually to make sure everything is compiled
   // await hre.run('compile');
   const [deployer] = await ethers.getSigners();
-  console.log("Deploying contracts with the account:", deployer.address);
-  console.log("Account balance:", (await deployer.getBalance()).toString())
 
   const Marketplace = await ethers.getContractFactory("Marketplace");
   const ERC721Contract = await ethers.getContractFactory("ERC721Contract");
 
   const marketplace = await Marketplace.deploy('My NFT Marketplace');
-  const nftContract = await ERC721Contract.deploy("KT Token", "KT");
+  const nftContract = await ERC721Contract.deploy("LionNFT", "HEY");
 
-  console.log("NFT deployed to: ", nftContract.address);
-  console.log("Marketplace deployed to:", marketplace.address);
+  console.log("DEPLOYING CONTRACTS WITH THE ACCOUNT: ", deployer.address);
+  console.log("ACCOUNT BALANCE: ", (await deployer.getBalance()).toString());
+  console.log("ERC721 DEPLOYED TO: ", nftContract.address);
+  console.log("MARKETPLACE DEPLOYED TO: ", marketplace.address);
 }
-
-/*
-
- 
-  
-   ;
-  
-    const Marketplace = await ethers.getContractFactory("Marketplace");
-    const marketplace = await Marketplace.deploy('My NFT Marketplace');
-    console.log("Marketplace address:", marketplace.address);
-
-    const NFTCollection = await ethers.getContractFactory("NFTCollection");
-    const nftCollection = await NFTCollection.deploy();
-    console.log("NFT Collection address:", nftCollection.address);
-
-    const ERC20 = await ethers.getContractFactory("ERC20");
-    const erc20 = await ERC20.deploy(600000, 'POC1 Token', 'POC1-Token');
-    // const erc20 = await ERC20.deploy(1000000, 'Ether Token', 'ETH');
-    console.log("ERC20 Token address:", erc20.address);
-  }
-
-*/
 
 // We recommend this pattern to be able to use async/await everywhere
 // and properly handle errors.
