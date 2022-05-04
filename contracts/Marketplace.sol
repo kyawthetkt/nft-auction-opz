@@ -169,6 +169,8 @@ contract Marketplace {
     function settleAuction(address _nftContractAddress, uint256 _nftTokenId) external { 
         Auction storage auction = nftAuctions[_nftContractAddress][_nftTokenId];
 
+        require(isOpenAuction(_nftContractAddress, _nftTokenId), "Auction is already ended.");
+
         // Check valid _nftContractAddress and _nftTokenId pair
         require(auction.seller != address(0), "Invalid NFT Auction.");
 
