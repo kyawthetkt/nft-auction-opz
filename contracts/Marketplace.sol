@@ -19,6 +19,7 @@ contract Marketplace {
         uint256 highestBid;
         address highestBidder;
         address seller;
+        address erc20Address;
         uint128 minPrice;
         uint256 endDate;
         uint32 bidIncrementAmount;
@@ -31,6 +32,7 @@ contract Marketplace {
         address nftContractAddress,
         uint256 tokenId,
         address seller,
+        address erc20Address,
         uint256 minPrice,
         uint256 endDate,
         uint32 bidIncrementAmount
@@ -39,6 +41,7 @@ contract Marketplace {
     event BidCreated(
         address nftContractAddress,
         uint256 tokenId,
+        address erc20Address,
         uint256 newAmount,
         address newBidder
     );
@@ -53,23 +56,7 @@ contract Marketplace {
     constructor(string memory _name) {
         name = _name;
     }
-
-    // function _isERC20Auction(address _auctionERC20Token)
-    //     internal
-    //     pure
-    //     returns (bool)
-    // {
-    //     return _auctionERC20Token != address(0);
-    // }
-
-    // modifier isNotOnSale(address _nftContractAddress,uint256 _nftTokenId) {
-    //     require(
-    //         nftAuctions[_nftContractAddress][_nftTokenId].seller != msg.sender,
-    //         "The Auction is already started."
-    //     );
-    //     _;
-    // }
-
+    
     modifier isContract(address account)  {
         // This method relies on extcodesize, which returns 0 for contracts in
         // construction, since the code is only stored at the end of the
@@ -93,17 +80,19 @@ contract Marketplace {
     function createAuction(
         address _nftContractAddress,
         uint256 _nftTokenId,
+        address _erc20Address,
         uint128 _minPrice,
         uint256 _endDate,
         uint32 _bidIncrementAmount
     ) external isContract(_nftContractAddress) {
         
-        require(_endDate > block.timestamp, "Invalid auction end date.");
+        require(_endDate > (block.timestamp * 1000), "Invalid auction end date.");
         
-        require(IERC721(_nftContractAddress).ownerOf(_nftTokenId) == msg.sender, "Only NFT owner create.");
+        require(IERC721(_nftContractAddress).ownerOf(_nftTokenId) == msg.sender, "Only NFT owner can create.");
         
         nftAuctions[_nftContractAddress][_nftTokenId].seller = msg.sender;
         nftAuctions[_nftContractAddress][_nftTokenId].endDate = _endDate;
+        // nftAuctions[_nftContractAddress][_nftTokenId].endDate = block.timestamp + _endDate;
         nftAuctions[_nftContractAddress][_nftTokenId].minPrice = _minPrice;
         nftAuctions[_nftContractAddress][_nftTokenId].highestBid = _minPrice;
         nftAuctions[_nftContractAddress][_nftTokenId].bidIncrementAmount = _bidIncrementAmount;
@@ -119,46 +108,35 @@ contract Marketplace {
             _nftContractAddress,
             _nftTokenId,
             msg.sender,
+            _erc20Address,
             _minPrice,
             _endDate,
             _bidIncrementAmount
         );
     }
 
-    function createBid(address _nftContractAddress, uint256 _nftTokenId, uint256 _newAmount) external returns(bool) {
+    function createBid(address _nftContractAddress, uint256 _nftTokenId, address _erc20Address, uint256 _newAmount) external payable returns(bool) {
         
-        Auction storage nftAuction = nftAuctions[_nftContractAddress][_nftTokenId];
+        Auction storage auction = nftAuctions[_nftContractAddress][_nftTokenId];
+
+        require(isOpenAuction(_nftContractAddress, _nftTokenId), "Auction is ended.");
 
         // must not be auction owner
-        require(msg.sender != nftAuction.seller, "Owner cannot create bid.");
+        require(msg.sender != auction.seller, "Owner cannot create bid.");
         
         // check valid price
-        require(_newAmount > nftAuction.highestBid, "New bid must be higher than current bid.");
+        require(_newAmount > auction.highestBid, "New bid must be higher than current bid.");
 
         // [REFUND the previous bidder]
-        address prevBidder = nftAuction.highestBidder;
-        if (prevBidder != address(0)) {
-            uint256 prevBid    = nftAuction.highestBid;
-            (bool success, ) = prevBidder.call{value: prevBid, gas: 20000}("");
-            // require(!success, "Unable to refund to previous highest bidder.");
-            if (!success) {
-                failedTransferCredits[prevBidder] =
-                    failedTransferCredits[prevBidder] +
-                    prevBid;
-            }
-        }
-
-        // emit refundedPreviousBidder(_nftContractAddress, _nftTokenId, prevBidder, prevBid);
-
-        // [LOCKING the token] by transferring bidder token to marketplace account
-        //** ERC20 paymentToken = ERC20(auction.addressPaymentToken);
-        //** paymentToken.transferFrom(msg.sender, address(this), _newAmount);
+        if (auction.highestBidder != address(0)) {
+            _payout(_nftContractAddress, _nftTokenId, auction.highestBidder, auction.highestBid);
+        }        
 
         address payable newBidder = payable(msg.sender);
-        nftAuction.highestBidder = newBidder;
-        nftAuction.highestBid = _newAmount;
-
-        emit BidCreated(_nftContractAddress, _nftTokenId, _newAmount, newBidder);
+        auction.highestBidder = newBidder;
+        auction.erc20Address = _erc20Address;
+        auction.highestBid = _newAmount;
+        emit BidCreated(_nftContractAddress, _nftTokenId, _erc20Address, _newAmount, newBidder);
 
         return true;
 
@@ -166,7 +144,23 @@ contract Marketplace {
 
     function getAuction(address _nftContractAddress, uint256 _nftTokenId) external view returns(Auction memory obj)
     {
-        return nftAuctions[_nftContractAddress][_nftTokenId];
+        // return nftAuctions[_nftContractAddress][_nftTokenId];        
+        Auction storage auction = nftAuctions[_nftContractAddress][_nftTokenId];
+        require(auction.seller != address(0), "Invalid NFT Auction.");
+        return auction;
+    }
+
+    // Test Case Not Done
+    // function isEndedAuction(address _nftContractAddress, uint256 _nftTokenId) external view returns(bool)
+    function isOpenAuction(address _nftContractAddress, uint256 _nftTokenId) public view returns(bool)
+    {
+        // return nftAuctions[_nftContractAddress][_nftTokenId];        
+        Auction storage auction = nftAuctions[_nftContractAddress][_nftTokenId];
+        // require(auction.seller != address(0), "Invalid NFT Auction.");
+        // return auction.endDate < (block.timestamp * 1000);
+        if ((block.timestamp * 1000) >= auction.endDate) return false;
+        return true;
+        // return (block.timestamp * 1000) >= auction.endDate;
     }
  
     /*
@@ -184,11 +178,49 @@ contract Marketplace {
         // Transfer NFT to highest bidder
         _transferNft(_nftContractAddress, _nftTokenId, auction.highestBidder);
 
+        if (auction.highestBidder != address(0)) {
+            _payout(_nftContractAddress, _nftTokenId, auction.highestBidder, auction.highestBid);
+        }
+
         // Transfer locked money to NFT Seller
         auction.highestBidder = address(0);
         auction.seller = address(0);
+        auction.erc20Address = address(0);
         auction.minPrice = 0;
         auction.bidIncrementAmount = 0;
+    }
+
+    function _isERC20Auction(address _auctionERC20Token)
+        internal
+        pure
+        returns (bool)
+    {
+        return _auctionERC20Token != address(0);
+    }
+
+    function _payout(
+        address _nftContractAddress,
+        uint256 _nftTokenId,
+        address _recipient,
+        uint256 _amount
+    ) internal {
+        address auctionERC20Token = nftAuctions[_nftContractAddress][_nftTokenId].erc20Address;
+
+        if (_isERC20Auction(auctionERC20Token)) {
+            IERC20(auctionERC20Token).transfer(_recipient, _amount);
+        } else {
+            // attempt to send the funds to the recipient
+            (bool success, ) = payable(_recipient).call{
+                value: _amount,
+                gas: 20000
+            }("");
+            // if it failed, update their credit balance so they can pull it later
+            if (!success) {
+                failedTransferCredits[_recipient] =
+                    failedTransferCredits[_recipient] +
+                    _amount;
+            }
+        }
     }
 
     function withdrawAllFailedCredits() external {
