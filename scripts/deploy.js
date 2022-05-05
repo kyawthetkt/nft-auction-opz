@@ -17,8 +17,8 @@ async function main() {
   const Marketplace = await ethers.getContractFactory("Marketplace");
   const ERC721Contract = await ethers.getContractFactory("ERC721Contract");
 
-  const marketplace = await Marketplace.deploy('My NFT Marketplace');
-  const nftContract = await ERC721Contract.deploy("LionNFT", "HEY");
+  const marketplace = await Marketplace.deploy('CVL NFT Marketplace');
+  const nftContract = await ERC721Contract.deploy("CVL", "CVL");
 
   console.log("DEPLOYING CONTRACTS WITH THE ACCOUNT: ", deployer.address);
   console.log("ACCOUNT BALANCE: ", (await deployer.getBalance()).toString());

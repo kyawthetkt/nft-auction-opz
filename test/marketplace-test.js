@@ -20,7 +20,7 @@ let passedAuctionResult;
 let auctionDetail;
 
 const zeroAddress = "0x0000000000000000000000000000000000000000";
-minPrice = 0;
+minPrice = 1000000000000000;
 
 function addMinuteToCurrent(minutesToAdd) {
     var currentDate = new Date();
@@ -145,13 +145,13 @@ describe("Nft", function () {
       
       // Failed Bid
       it('Should reject if auction owner creates bid', async () => {        
-        await expect(marketplace.connect(user1).createBid(nft.address, nftTokenId, newAmount)).to.be.revertedWith(
+        await expect(marketplace.connect(user1).createBid(nft.address, nftTokenId,  zeroAddress, newAmount)).to.be.revertedWith(
           "Owner cannot create bid."
         ); 
       });
 
       it('Should reject if new amount is not greater than current bid or min price', async () => {
-        await expect(marketplace.connect(user2).createBid(nft.address, nftTokenId, newAmount)).to.be.revertedWith(
+        await expect(marketplace.connect(user2).createBid(nft.address, nftTokenId,  zeroAddress, newAmount)).to.be.revertedWith(
           "New bid must be higher than current bid."
         );
       });
@@ -190,8 +190,8 @@ describe("Nft", function () {
   describe("Settle Auction", async function () {
     beforeEach(async () => {
       await marketplace.connect(user1).createAuction(nft.address, nftTokenId, zeroAddress, minPrice, endAuctionDate, 10);
-      await marketplace.connect(user2).createBid(nft.address, nftTokenId, newAmount1);
-      await marketplace.connect(user3).createBid(nft.address, nftTokenId, newAmount2);
+      await marketplace.connect(user2).createBid(nft.address, nftTokenId,  zeroAddress, newAmount1);
+      await marketplace.connect(user3).createBid(nft.address, nftTokenId,  zeroAddress, newAmount2);
     });
     
     // Failed Settlement
